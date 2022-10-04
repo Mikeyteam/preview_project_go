@@ -1,0 +1,32 @@
+version: "3.7"
+services:
+  previewer:
+    build:
+      context: ../../
+      dockerfile: ./build//docker/previewer/Dockerfile
+    environment:
+      - LOG_LEVEL=error
+      - HTTP_LISTEN=:8013
+      - IMAGE_MAX_FILE_SIZE=1000000
+      - IMAGE_GET_TIMEOUT=10
+      - CACHE_SIZE=100000000
+      - CACHE_TYPE=disk
+      - CACHE_PATH=./cache
+    depends_on:
+      - nginx
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./../../tests/html:/usr/share/nginx/html
+    logging:
+      driver: none
+  tests:
+    image: golang:1.14
+    volumes:
+      - ./../../:/app
+    working_dir: /app
+    command: sh -c 'go test -v -race -count 100 ./... && cd ./tests/go && sleep 2 && go test -v -tags=integration'
+    depends_on:
+      - previewer
+
+
